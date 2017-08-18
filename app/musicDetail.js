@@ -42,7 +42,7 @@ export default class MusicDetail extends Component {
                     </View>
                     <View style={{flex: 1, margin:20}}>
                         <View style={{flex: 1, flexDirection:'row', justifyContent:'space-between'}}>
-                            <View>
+                            <View style={{width: '50%'}}>
                                 <Text style={{fontSize:20, fontWeight:'bold', color:'black'}}>{this.state.dataSource.title}</Text>
                                 <Text>歌手：{this.state.dataSource.author[0].name}</Text>
                                 <Text>发行公司：{this.state.dataSource.attrs.publisher}</Text>

@@ -20,6 +20,7 @@ import ViewPager from "./viewpager";
 import BookDetail from "./bookDetail";
 import MusicDetail from "./musicDetail";
 import MovieDetail from "./movieDetail";
+import SearchScreen from "./search";
 
 const MAIN = 'Main';
 
@@ -27,8 +28,8 @@ class SplashScreen extends Component {
 
     onStart() {
         const {navigate} = this.props.navigation;
-        // navigate(MAIN)
-        navigate('ViewPager')
+        navigate(MAIN)
+        // navigate('ViewPager')
     }
 
   render() {
@@ -120,6 +121,9 @@ const SimpleApp = StackNavigator({
     },
     MovieDetail: {
         screen: MovieDetail
+    },
+    Search: {
+        screen: SearchScreen
     },
 });
 

@@ -44,10 +44,11 @@ export default class BookDetail extends Component {
                     <View style={{flex: 1, flexDirection:'row', justifyContent:'space-between'}}>
                         <View>
                             <Text style={{fontSize:20, fontWeight:'bold', color:'black'}}>{this.state.dataSource.title}</Text>
-                            <Text>作者：{this.state.dataSource.author}</Text>
-                            <Text>译者：{this.state.dataSource.translator}</Text>
+                            <Text>作者：{this.state.dataSource.author.join('、')}</Text>
+                            {this.textCheckNull(this.state.dataSource.translator.join('、'))}
                             <Text>出版社：{this.state.dataSource.publisher}</Text>
                             <Text>出版时间：{this.state.dataSource.pubdate}</Text>
+                            <Text>价格：{this.state.dataSource.price}</Text>
                         </View>
                         <View style={{backgroundColor: 'white',alignSelf:'center', padding:10, elevation: 5, alignItems:'center', justifyContent:'center'}}>
                             <Text>豆瓣评分</Text>
@@ -80,6 +81,20 @@ export default class BookDetail extends Component {
 
                 </View>
             </ScrollView>
+        )
+    }
+
+    /**
+     * 验证'译者'是否为空
+     * @param translator
+     * @returns {*}
+     */
+    textCheckNull(translator) {
+        if(!translator) {
+            return null;
+        }
+        return(
+            <Text numberOfLines={1}>译者：{translator}</Text>
         )
     }
 

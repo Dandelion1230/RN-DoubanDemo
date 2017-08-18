@@ -4,28 +4,30 @@ import StarRating from 'react-native-star-rating';
 const BOOK_NORMAL = require('./images/book_normal.png');
 const BOOK_SELECT = require('./images/book_selected.png');
 
-const BOOK_URL = 'https://api.douban.com/v2/book/search?tag=文学';
+var BOOK_URL = 'https://api.douban.com/v2/book/search?tag=文学';
 const BOOK_SEARCH = 'https://api.douban.com/v2/book/search?q=';
 
 import  LineDivider  from './lineDivder.js'
 import  LoadingView  from './loadingView.js'
+import SearchImage from './searchImage.js'
+
 
 
 var searchText = null;
+var pager = 0;
 
 export default class BookScreen extends Component{
 
     constructor(props) {
         super(props);
         this.state = {
-            dataSource: null,
-            loading: false,
+            dataSource: [],
             refreshing: false
         };
     };
 
     componentWillMount() {
-        this.searchBooks(BOOK_URL)
+        this.searchBooks()
     }
 
     static navigationOptions = ({navigation, screenProps}) => ({
@@ -36,38 +38,25 @@ export default class BookScreen extends Component{
             return (
                 <Image source={focused ? BOOK_SELECT:BOOK_NORMAL} style={[styles.icon]}/>
             )
-        })
+        }),
+        headerRight: (
+            <SearchImage/>
+        )
     });
 
     render() {
         return(
             <View style={styles.container}>
-                <View style={styles.search}>
-                    <TextInput
-                        editable={true}
-                        maxLength={20}
-                        underlineColorAndroid={'transparent'}
-                        returnKeyType='search'
-                        placeholder={'请输入想要搜索的图书'}
-                        style={styles.input}
-                        onChangeText={(text) => searchText = text}
-                    />
-                    <Button
-                        title='搜索 '
-                        onPress={() =>{this.searchBooks(BOOK_SEARCH+searchText)}}
-                    />
-                </View>
                 {this.renderBooks()}
             </View>
         )
     }
 
+    /**
+     * 根据不同状态去渲染不同的数据
+     * @returns {XML}
+     */
     renderBooks() {
-        if(this.state.loading) {
-            return(
-                <LoadingView/>
-            )
-        }
         if(!this.state.dataSource) {
             return(
                 <View style={{flex:1, justifyContent:'center'}}>
@@ -86,6 +75,8 @@ export default class BookScreen extends Component{
                     onPress={() => this.onPressItem()}
                     onRefresh={() => this.searchBooks(BOOK_URL)}
                     refreshing={this.state.refreshing}
+                    onEndReachedThreshold={0.1}
+                    onEndReached={(info) => this.loadMoreData()}
                     keyExtractor={(item, index) => item.id}
                     ItemSeparatorComponent= { LineDivider }
                     renderItem = {({item, index}) =>
@@ -97,8 +88,8 @@ export default class BookScreen extends Component{
                                 />
                                 <View style={styles.listRight}>
                                     <Text numberOfLines={1} style={{fontSize:16, fontWeight:'bold'}}>{item.title}</Text>
-                                    <Text numberOfLines={1}>作者：{item.author}</Text>
-                                    {this.textCheckNull(item.translator[0])}
+                                    <Text numberOfLines={1}>作者：{item.author.join('、')}</Text>
+                                    {this.textCheckNull(item.translator.join('、'))}
                                     <Text numberOfLines={1}>价格：{item.price}</Text>
                                     <Text numberOfLines={1}>出版社：{item.publisher}</Text>
                                     <Text numberOfLines={1}>出版日期：{item.pubdate}</Text>
@@ -134,16 +125,38 @@ export default class BookScreen extends Component{
         navigate('BookDetail', {title:item.title, id: item.id})
     }
 
-    searchBooks(uri) {
+    /**
+     * 搜索图书和刷新数据
+     */
+    searchBooks() {
+        pager = 0;
+        if(searchText) {
+            BOOK_URL = BOOK_SEARCH + searchText;
+        }
         this.setState({
-            dataSource:null,
-            loading:true,
+            refreshing: true
+        });
+        this.fetchData(BOOK_URL);
+    }
+
+    /**
+     * 加载更多
+     */
+    loadMoreData() {
+        pager += 1;
+        let uri = BOOK_URL + `&start=${pager*20}&count=20`;
+        this.setState({
             refreshing: true
         });
         this.fetchData(uri);
     }
 
 
+    /**
+     * 验证'译者'是否为空
+     * @param translator
+     * @returns {*}
+     */
     textCheckNull(translator) {
         if(!translator) {
             return null;
@@ -153,20 +166,29 @@ export default class BookScreen extends Component{
         )
     }
 
+    /**
+     * 联网请求
+     * @param uri
+     */
     fetchData(uri) {
         fetch(uri)
             .then((response) => response.json())
             .then((responseJson) => {
+            let data;
+            if (pager > 0) {
+                // 加载更多
+                data = this.state.dataSource.concat(responseJson.books)
+            }else {
+                // 下拉刷新或搜索图书
+                data = responseJson.books
+            }
                 this.setState({
-                    dataSource:responseJson.books,
-                    loading:false,
+                    dataSource:data,
                     refreshing: false,
                 })
             })
             .catch((error) => {
                 this.setState({
-                    dataSource:error,
-                    loading:false,
                     refreshing: false,
                 })
             });

@@ -9,6 +9,7 @@ const MOVIE_TOP = 'https://api.douban.com/v2/movie/top250?start=0&count=21';
 
 import  LineDivider  from './lineDivder.js'
 import  LoadingView  from './loadingView.js'
+import SearchImage from './searchImage.js'
 
 var searchText = null;
 
@@ -30,7 +31,10 @@ export default class MovieScreen extends Component{
             return(
                 <Image source={focused ? MOVIE_SELECT : MOVIE_NORMAL} style={[styles.icon]}/>
             )
-        }
+        },
+        headerRight: (
+            <SearchImage/>
+        )
     }
 
     componentWillMount() {
@@ -40,21 +44,6 @@ export default class MovieScreen extends Component{
     render() {
         return(
             <View style={styles.container}>
-                <View style={styles.search}>
-                    <TextInput
-                        editable={true}
-                        maxLength={20}
-                        underlineColorAndroid={'transparent'}
-                        returnKeyType='search'
-                        placeholder={'请输入想要搜索的电影'}
-                        style={styles.input}
-                        onChangeText={(text) => searchText=text}
-                    />
-                    <Button
-                        title='搜索'
-                        onPress={() =>{this.searchMovies(MOVIE_SEARCH+searchText)}}
-                    />
-                </View>
                 {this.renderMovies()}
             </View>
         )

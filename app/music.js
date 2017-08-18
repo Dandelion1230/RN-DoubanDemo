@@ -6,25 +6,29 @@ const MUSIC_NORMAL = require('./images/music_normal.png');
 const MUSIC_SELECT = require('./images/music_selected.png');
 
 
-const MUSIC_URL = 'https://api.douban.com/v2/music/search?tag=流行音乐';
+var MUSIC_URL = 'https://api.douban.com/v2/music/search?tag=流行音乐';
 const MUSIC_SEARCH = 'https://api.douban.com/v2/music/search?q=';
 
 import  LineDivider  from './lineDivder.js'
+import Icon from 'react-native-vector-icons/Ionicons'
 import  LoadingView  from './loadingView.js'
 
+
 var searchText = null;
+var pager = 0;
 
 export default class MusicScreen extends Component{
 
     constructor(props) {
         super(props);
         this.state = {
-            dataSource: null,
-            loading: false
+            dataSource: [],
+            loading: false,
+            refreshing: false,
         };
     };
 
-    static navigationOptions = {
+    static navigationOptions = ({navigation}) =>  ({
         headerTitle: '音乐',
         headerTitleStyle : {alignSelf:'center'},
         tabBarLabel: 'Music',
@@ -32,17 +36,34 @@ export default class MusicScreen extends Component{
             return(
                 <Image source={focused ? MUSIC_SELECT : MUSIC_NORMAL} style={styles.icon}/>
             )
-        }
-    }
+        },
+        headerRight: (
+            <Icon name="ios-search" size={28} color="#000" style={{marginRight:20}} onPress={()=>navigation.state.params.navigatePress()}/>
+        )
+    });
 
     componentWillMount() {
-        this.searchMusics(MUSIC_URL);
+        this.searchMusics();
+    }
+
+    componentDidMount(){
+        // 通过在componentDidMount里面设置setParams将title的值动态修改
+        this.props.navigation.setParams({
+            // headerTitle:'Detail1',
+            navigatePress:this.navigatePress,
+        });
+    }
+
+    navigatePress = () => {
+        // alert('点击headerRight');
+        const {navigate} = this.props.navigation;
+        navigate('Search')
     }
 
     render() {
         return(
             <View style={styles.container}>
-                <View style={styles.search}>
+                {/*<View style={styles.search}>
                     <TextInput
                         editable={true}
                         maxLength={20}
@@ -54,20 +75,21 @@ export default class MusicScreen extends Component{
                     />
                     <Button
                         title='搜索'
-                        onPress={() =>{this.searchMusics(MUSIC_SELECT+searchText)}}
+                        onPress={() =>{this.searchMusics()}}
                     />
-                </View>
+                </View>*/}
+                {/*<SearchImage/>*/}
                 {this.renderMusics()}
             </View>
         )
     }
 
     renderMusics() {
-        if(this.state.loading) {
-            return(
-                <LoadingView/>
-            )
-        }
+        // if(this.state.loading) {
+        //     return(
+        //         <LoadingView/>
+        //     )
+        // }
         if(!this.state.dataSource) {
             return(
                 <View style={{flex:1, justifyContent:'center'}}>
@@ -84,6 +106,10 @@ export default class MusicScreen extends Component{
                         this.state.dataSource
                     }
                     keyExtractor={(item, index) => item.id}
+                    onRefresh={() => this.searchMusics(MUSIC_URL)}
+                    refreshing={this.state.refreshing}
+                    onEndReachedThreshold={0.1}
+                    onEndReached={(info) => this.loadMoreData()}
                     ItemSeparatorComponent= { LineDivider }
                     renderItem = {({item, index}) =>
                         <TouchableOpacity onPress={()=>this.onPressItem(item, index)}>
@@ -94,7 +120,7 @@ export default class MusicScreen extends Component{
                                 />
                                 <View style={styles.listRight}>
                                     <Text numberOfLines={1} style={{fontSize:16, fontWeight:'bold'}}>{item.title}</Text>
-                                    <Text numberOfLines={1}>歌手：{item.author[0].name}</Text>
+                                    <Text numberOfLines={1}>歌手：{item.attrs.singer.join('、')}</Text>
                                     <Text numberOfLines={1}>发行公司：{item.attrs.publisher}</Text>
                                     <Text numberOfLines={1}>发行日期：{item.attrs.pubdate}</Text>
                                     <View style={{flexDirection:'row'}}>
@@ -126,27 +152,48 @@ export default class MusicScreen extends Component{
         navigate('MusicDetail', {title:item.title, id: item.id})
     }
 
-    searchMusics(uri) {
+    searchMusics() {
+        pager = 0;
+        if(searchText) {
+            MUSIC_URL = MUSIC_SEARCH + searchText;
+        }
         this.setState({
-            dataSource:null,
-            loading:true
+            refreshing: true,
         });
-        this.fetchData(uri);
+        this.fetchData(MUSIC_URL);
     }
+
+    loadMoreData() {
+        pager += 1;
+        MUSIC_URL += `&start=${pager * 20}&count=20`
+        this.setState({
+            refreshing: true,
+        });
+        this.fetchData(MUSIC_URL);
+    }
+
 
     fetchData(uri) {
         fetch(uri)
             .then((response) => response.json())
             .then((responseJson) => {
+            let data;
+                if (pager > 0) {
+                    data = this.state.dataSource.concat(responseJson.musics)
+                }else {
+                    data = responseJson.musics
+                }
                 this.setState({
-                    dataSource:responseJson.musics,
-                    loading:false
+                    dataSource:data,
+                    loading:false,
+                    refreshing: false,
                 })
             })
             .catch((error) => {
                 this.setState({
                     dataSource:error,
-                    loading:false
+                    loading:false,
+                    refreshing: false,
                 })
             });
     }
